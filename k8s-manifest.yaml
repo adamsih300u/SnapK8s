@@ -45,6 +45,20 @@ data:
     filter = *:info
 
 ---
+# PersistentVolumeClaim for Snapserver state
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapserver-state-pvc
+  namespace: snapcast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+---
 # Deployment for Snapcast Server
 apiVersion: apps/v1
 kind: Deployment
@@ -101,6 +115,8 @@ spec:
         - name: config-file
           mountPath: /config/snapserver.conf
           subPath: snapserver.conf
+        - name: snapserver-state
+          mountPath: /var/lib/snapserver
         - name: shm
           mountPath: /dev/shm
         
@@ -141,6 +157,9 @@ spec:
       - name: config-file
         configMap:
           name: snapcast-config
+      - name: snapserver-state
+        persistentVolumeClaim:
+          claimName: snapserver-state-pvc
       - name: shm
         emptyDir:
           medium: Memory
