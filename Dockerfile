@@ -223,13 +223,16 @@ RUN echo 'general = {' > /etc/shairport-sync.conf && \
     echo '    session_timeout = 20;' >> /etc/shairport-sync.conf && \
     echo '};' >> /etc/shairport-sync.conf && \
     echo '' >> /etc/shairport-sync.conf && \
-    echo 'alsa = {' >> /etc/shairport-sync.conf && \
-    echo '};' >> /etc/shairport-sync.conf && \
-    echo '' >> /etc/shairport-sync.conf && \
     echo 'pipe = {' >> /etc/shairport-sync.conf && \
     echo '    name = "/tmp/snapfifo";' >> /etc/shairport-sync.conf && \
     echo '    audio_backend_buffer_desired_length_in_seconds = 0.2;' >> /etc/shairport-sync.conf && \
     echo '    audio_backend_latency_offset_in_seconds = 0.0;' >> /etc/shairport-sync.conf && \
+    echo '    audio_backend_silent_lead_in_time = "auto";' >> /etc/shairport-sync.conf && \
+    echo '};' >> /etc/shairport-sync.conf && \
+    echo '' >> /etc/shairport-sync.conf && \
+    echo 'alsa = {' >> /etc/shairport-sync.conf && \
+    echo '    output_rate = 44100;' >> /etc/shairport-sync.conf && \
+    echo '    output_format = "S16";' >> /etc/shairport-sync.conf && \
     echo '};' >> /etc/shairport-sync.conf && \
     echo '' >> /etc/shairport-sync.conf && \
     echo 'metadata = {' >> /etc/shairport-sync.conf && \

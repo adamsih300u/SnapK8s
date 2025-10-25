@@ -45,36 +45,6 @@ data:
     filter = *:info
 
 ---
-# PersistentVolumeClaim for configuration and data
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: snapcast-config-pvc
-  namespace: snapcast
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  # Uncomment and specify storage class if needed
-  # storageClassName: your-storage-class
-
----
-# PersistentVolumeClaim for audio pipes
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: snapcast-pipes-pvc
-  namespace: snapcast
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-
----
 # Deployment for Snapcast Server
 apiVersion: apps/v1
 kind: Deployment
@@ -100,8 +70,8 @@ spec:
       
       containers:
       - name: snapcast-server
-        image: snapcast-server:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/adamsih300u/snapk8s:latest
+        imagePullPolicy: Always
         
         ports:
         - name: snapcast-tcp
@@ -128,13 +98,11 @@ spec:
           value: "America/New_York"
         
         volumeMounts:
-        - name: config-volume
-          mountPath: /config
-        - name: pipes-volume
-          mountPath: /tmp/snapfifo
         - name: config-file
           mountPath: /config/snapserver.conf
           subPath: snapserver.conf
+        - name: shm
+          mountPath: /dev/shm
         
         # Resource limits and requests
         resources:
@@ -170,15 +138,13 @@ spec:
           #     - NET_ADMIN  # For network operations
       
       volumes:
-      - name: config-volume
-        persistentVolumeClaim:
-          claimName: snapcast-config-pvc
-      - name: pipes-volume
-        persistentVolumeClaim:
-          claimName: snapcast-pipes-pvc
       - name: config-file
         configMap:
           name: snapcast-config
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 256Mi
       
       # Node selection (optional)
       # nodeSelector:
