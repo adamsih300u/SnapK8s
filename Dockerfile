@@ -179,11 +179,7 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '    nqptp' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo '# Create FIFO for audio pipeline' >> /entrypoint.sh && \
-    echo 'rm -rf /tmp/snapfifo' >> /entrypoint.sh && \
-    echo 'mkfifo /tmp/snapfifo' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Start Snapcast Server in background' >> /entrypoint.sh && \
+    echo '# Start Snapcast Server in background (will create pipe)' >> /entrypoint.sh && \
     echo 'echo "Starting Snapcast Server..."' >> /entrypoint.sh && \
     echo 'echo "Checking snapserver binary:"' >> /entrypoint.sh && \
     echo 'file /usr/local/bin/snapserver' >> /entrypoint.sh && \
@@ -191,8 +187,17 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'snapserver --config /config/snapserver.conf &' >> /entrypoint.sh && \
     echo 'SNAPSERVER_PID=$!' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo '# Wait for Snapcast to be ready' >> /entrypoint.sh && \
+    echo '# Wait for Snapcast to be ready and pipe to be created' >> /entrypoint.sh && \
     echo 'sleep 2' >> /entrypoint.sh && \
+    echo 'echo "Waiting for pipe to be created..."' >> /entrypoint.sh && \
+    echo 'for i in {1..10}; do' >> /entrypoint.sh && \
+    echo '    if [ -p /tmp/snapfifo ]; then' >> /entrypoint.sh && \
+    echo '        echo "Pipe /tmp/snapfifo is ready"' >> /entrypoint.sh && \
+    echo '        break' >> /entrypoint.sh && \
+    echo '    fi' >> /entrypoint.sh && \
+    echo '    echo "Waiting for pipe... ($i/10)"' >> /entrypoint.sh && \
+    echo '    sleep 1' >> /entrypoint.sh && \
+    echo 'done' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# Start Shairport-Sync in background' >> /entrypoint.sh && \
     echo 'echo "Starting Shairport-Sync..."' >> /entrypoint.sh && \
@@ -223,16 +228,13 @@ RUN echo 'general = {' > /etc/shairport-sync.conf && \
     echo '    session_timeout = 20;' >> /etc/shairport-sync.conf && \
     echo '};' >> /etc/shairport-sync.conf && \
     echo '' >> /etc/shairport-sync.conf && \
+    echo 'alsa = {' >> /etc/shairport-sync.conf && \
+    echo '};' >> /etc/shairport-sync.conf && \
+    echo '' >> /etc/shairport-sync.conf && \
     echo 'pipe = {' >> /etc/shairport-sync.conf && \
     echo '    name = "/tmp/snapfifo";' >> /etc/shairport-sync.conf && \
     echo '    audio_backend_buffer_desired_length_in_seconds = 0.2;' >> /etc/shairport-sync.conf && \
     echo '    audio_backend_latency_offset_in_seconds = 0.0;' >> /etc/shairport-sync.conf && \
-    echo '    audio_backend_silent_lead_in_time = "auto";' >> /etc/shairport-sync.conf && \
-    echo '};' >> /etc/shairport-sync.conf && \
-    echo '' >> /etc/shairport-sync.conf && \
-    echo 'alsa = {' >> /etc/shairport-sync.conf && \
-    echo '    output_rate = 44100;' >> /etc/shairport-sync.conf && \
-    echo '    output_format = "S16";' >> /etc/shairport-sync.conf && \
     echo '};' >> /etc/shairport-sync.conf && \
     echo '' >> /etc/shairport-sync.conf && \
     echo 'metadata = {' >> /etc/shairport-sync.conf && \
