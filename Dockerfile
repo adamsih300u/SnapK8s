@@ -132,7 +132,7 @@ COPY --from=builder /usr/local/bin/snapserver /usr/local/bin/
 COPY --from=builder /etc/shairport-sync.conf.sample /etc/shairport-sync.conf
 
 # Create necessary directories (NOT snapfifo - it's a pipe, not a directory)
-RUN mkdir -p /config /var/log /var/lib/snapserver
+RUN mkdir -p /config /var/log /root/.config/snapserver
 
 # Copy configuration files
 COPY config/ /config/

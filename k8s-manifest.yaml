@@ -116,7 +116,7 @@ spec:
           mountPath: /config/snapserver.conf
           subPath: snapserver.conf
         - name: snapserver-state
-          mountPath: /var/lib/snapserver
+          mountPath: /root/.config/snapserver
         - name: shm
           mountPath: /dev/shm
         
