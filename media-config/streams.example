@@ -1,0 +1,32 @@
+# Example Media Streams Configuration
+# Copy this to config/snapserver.conf and add these sources
+
+# Internet Radio Streams using MPV
+# MPV is excellent for HTTP streams and handles reconnection well
+
+# Example 1: Classical Music Stream
+source = process:///usr/bin/mpv?name=Classical&sampleformat=44100:16:2&params=http://stream.radioparadise.com/rp_192m.ogg --no-terminal --no-video --audio-channels=stereo --audio-samplerate=44100 --audio-format=s16le --ao=pcm:file=/dev/stdout
+
+# Example 2: Jazz Stream
+source = process:///usr/bin/mpv?name=Jazz&sampleformat=44100:16:2&params=http://jazz.streamr.ru/jazz-64.mp3 --no-terminal --no-video --audio-channels=stereo --audio-samplerate=44100 --audio-format=s16le --ao=pcm:file=/dev/stdout
+
+# Example 3: BBC Radio (HLS Stream)
+source = process:///usr/bin/mpv?name=BBC&sampleformat=44100:16:2&params=http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one.m3u8 --no-terminal --no-video --audio-channels=stereo --audio-samplerate=44100 --audio-format=s16le --ao=pcm:file=/dev/stdout
+
+# Using MPG123 for MP3 streams (lightweight alternative)
+source = process:///usr/bin/mpg123?name=Radio1&sampleformat=44100:16:2&params=-q -r 44100 -s http://example.com/stream.mp3
+
+# Using FFmpeg for more complex scenarios
+source = process:///usr/bin/ffmpeg?name=Stream&sampleformat=44100:16:2&params=-hide_banner -loglevel error -i http://example.com/stream -f s16le -acodec pcm_s16le -ac 2 -ar 44100 -
+
+# Meta Stream - Switch between multiple sources
+source = meta:///Classical/Jazz/BBC?name=Radio
+
+# Tips:
+# - MPV is most versatile (handles HLS, HTTP, DASH, etc.)
+# - MPG123 is lightweight for simple MP3 streams
+# - FFmpeg gives you maximum control and format support
+# - Use meta streams to group related sources
+# - Test streams individually before adding to production
+
+

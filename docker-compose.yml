@@ -1,0 +1,65 @@
+services:
+  snapcast-airplay:
+    build: .
+    image: snapcast-airplay:latest
+    container_name: snapcast-airplay
+    restart: unless-stopped
+    
+    # Network configuration - use host for Avahi/mDNS discovery
+    network_mode: host
+    
+    # Volume mounts
+    volumes:
+      - ./config:/config
+      - /dev/shm:/dev/shm
+    
+    # Shared memory for NQPTP
+    shm_size: '256mb'
+    
+    # Environment variables
+    environment:
+      - TZ=America/New_York  # Set your timezone
+      - SKIP_AVAHI=false     # Set to 'true' to skip Avahi daemon startup
+    
+    # Ports (when not using host network)
+    # ports:
+    #   - "1704:1704"    # Snapcast server port
+    #   - "1705:1705"    # Snapcast control port
+    #   - "1780:1780"    # Web interface (HTTP)
+    #   - "1788:1788"    # Web interface (HTTPS)
+    #   - "5000:5000"    # AirPlay port
+    
+    # Audio device access (if needed for local audio)
+#    devices:
+#      - /dev/snd:/dev/snd
+    
+    # Additional capabilities for audio, shared memory, and NQPTP networking
+    cap_add:
+      - SYS_NICE
+      - IPC_LOCK
+      - NET_BIND_SERVICE
+      - NET_RAW
+    
+    # IPC mode for shared memory
+    ipc: host
+    
+    # Health check - tests both Snapcast and AirPlay services
+    healthcheck:
+      test: ["CMD", "netcat", "-z", "localhost", "1704", "&&", "netcat", "-z", "localhost", "5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# Example configuration for development
+# Uncomment and modify as needed
+  # snapclient:
+  #   image: badaix/snapclient:latest
+  #   container_name: snapcast-client
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   devices:
+  #     - /dev/snd:/dev/snd
+  #   environment:
+  #     - SNAPSERVER_HOST=localhost
+  #   command: ["--host", "localhost"] 

@@ -1,0 +1,327 @@
+---
+# Namespace for Snapcast resources
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: snapcast
+  labels:
+    name: snapcast
+
+---
+# ConfigMap for Snapcast configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snapcast-config
+  namespace: snapcast
+data:
+  snapserver.conf: |
+    # Snapcast Server Configuration
+    # Audio sources configuration
+    
+    [stream]
+    # Stream configuration
+    source = pipe:///tmp/snapfifo?name=default
+    # Uncomment and configure additional sources as needed:
+    # source = pipe:///tmp/snapfifo?name=mpv_stream
+    # Spotify Connect via librespot is not available in this build
+    # source = airplay:?name=AirPlay&port=5000
+    
+    [tcp]
+    # TCP interface configuration
+    enabled = true
+    bind_to_address = 0.0.0.0
+    port = 1704
+    
+    [http]
+    # Web interface configuration
+    enabled = true
+    bind_to_address = 0.0.0.0
+    port = 1780
+    doc_root = /usr/share/snapserver/snapweb
+    
+    [logging]
+    # Logging configuration
+    filter = *:info
+
+---
+# PersistentVolumeClaim for configuration and data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapcast-config-pvc
+  namespace: snapcast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # Uncomment and specify storage class if needed
+  # storageClassName: your-storage-class
+
+---
+# PersistentVolumeClaim for audio pipes
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapcast-pipes-pvc
+  namespace: snapcast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+---
+# Deployment for Snapcast Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapcast-server
+  namespace: snapcast
+  labels:
+    app: snapcast-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snapcast-server
+  template:
+    metadata:
+      labels:
+        app: snapcast-server
+    spec:
+      # Use host network for mDNS/Avahi discovery
+      # Comment out if you prefer standard networking
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      
+      containers:
+      - name: snapcast-server
+        image: snapcast-server:latest
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: snapcast-tcp
+          containerPort: 1704
+          protocol: TCP
+        - name: snapcast-control
+          containerPort: 1705
+          protocol: TCP
+        - name: web-http
+          containerPort: 1780
+          protocol: TCP
+        - name: web-https
+          containerPort: 1788
+          protocol: TCP
+        - name: airplay
+          containerPort: 5000
+          protocol: TCP
+        - name: mdns
+          containerPort: 5353
+          protocol: UDP
+        
+        env:
+        - name: TZ
+          value: "America/New_York"
+        
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+        - name: pipes-volume
+          mountPath: /tmp/snapfifo
+        - name: config-file
+          mountPath: /config/snapserver.conf
+          subPath: snapserver.conf
+        
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Health checks
+        livenessProbe:
+          tcpSocket:
+            port: 1704
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          tcpSocket:
+            port: 1704
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: false  # Required for avahi-daemon
+          # capabilities:
+          #   add:
+          #     - NET_ADMIN  # For network operations
+      
+      volumes:
+      - name: config-volume
+        persistentVolumeClaim:
+          claimName: snapcast-config-pvc
+      - name: pipes-volume
+        persistentVolumeClaim:
+          claimName: snapcast-pipes-pvc
+      - name: config-file
+        configMap:
+          name: snapcast-config
+      
+      # Node selection (optional)
+      # nodeSelector:
+      #   kubernetes.io/arch: amd64
+      
+      # Tolerations for specific nodes (optional)
+      # tolerations:
+      # - key: "audio-node"
+      #   operator: "Equal"
+      #   value: "true"
+      #   effect: "NoSchedule"
+
+---
+# LoadBalancer Service for MetalLB
+apiVersion: v1
+kind: Service
+metadata:
+  name: snapcast-server-lb
+  namespace: snapcast
+  labels:
+    app: snapcast-server
+  annotations:
+    # MetalLB annotations
+    metallb.universe.tf/loadBalancerIPs: "192.168.1.100"  # Specify desired IP
+    # metallb.universe.tf/address-pool: snapcast-pool      # Or specify pool name
+spec:
+  type: LoadBalancer
+  selector:
+    app: snapcast-server
+  ports:
+  - name: snapcast-server
+    port: 1704
+    targetPort: 1704
+    protocol: TCP
+  - name: snapcast-control
+    port: 1705
+    targetPort: 1705
+    protocol: TCP
+  - name: web-http
+    port: 1780
+    targetPort: 1780
+    protocol: TCP
+  - name: web-https
+    port: 1788
+    targetPort: 1788
+    protocol: TCP
+  - name: airplay
+    port: 5000
+    targetPort: 5000
+    protocol: TCP
+  - name: mdns
+    port: 5353
+    targetPort: 5353
+    protocol: UDP
+  
+  # Optional: External traffic policy for better performance
+  externalTrafficPolicy: Local
+
+---
+# Alternative: ClusterIP Service (if using hostNetwork)
+# Uncomment if you're using hostNetwork: true
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: snapcast-server-cluster
+#   namespace: snapcast
+# spec:
+#   type: ClusterIP
+#   selector:
+#     app: snapcast-server
+#   ports:
+#   - name: snapcast-server
+#     port: 1704
+#     targetPort: 1704
+
+---
+# NetworkPolicy for security (optional)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: snapcast-network-policy
+  namespace: snapcast
+spec:
+  podSelector:
+    matchLabels:
+      app: snapcast-server
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from: []  # Allow from all sources
+    ports:
+    - protocol: TCP
+      port: 1704
+    - protocol: TCP
+      port: 1705
+    - protocol: TCP
+      port: 1780
+    - protocol: TCP
+      port: 1788
+    - protocol: TCP
+      port: 5000
+    - protocol: UDP
+      port: 5353
+  egress:
+  - {}  # Allow all egress traffic
+
+---
+# Optional: HorizontalPodAutoscaler
+# Uncomment if you want auto-scaling based on CPU usage
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: snapcast-server-hpa
+#   namespace: snapcast
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: snapcast-server
+#   minReplicas: 1
+#   maxReplicas: 3
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 70
+
+---
+# ServiceMonitor for Prometheus monitoring (optional)
+# Requires Prometheus Operator
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: snapcast-server-metrics
+#   namespace: snapcast
+# spec:
+#   selector:
+#     matchLabels:
+#       app: snapcast-server
+#   endpoints:
+#   - port: web-http
+#     path: /metrics
+#     interval: 30s 

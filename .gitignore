@@ -1,0 +1,24 @@
+# Personal configuration files
+config/snapserver.conf
+
+# Docker volumes and runtime data
+/tmp/snapfifo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
