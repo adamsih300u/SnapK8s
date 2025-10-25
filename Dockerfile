@@ -131,8 +131,8 @@ COPY --from=builder /usr/local/bin/nqptp /usr/local/bin/
 COPY --from=builder /usr/local/bin/snapserver /usr/local/bin/
 COPY --from=builder /etc/shairport-sync.conf.sample /etc/shairport-sync.conf
 
-# Create necessary directories
-RUN mkdir -p /config /tmp/snapfifo /var/log
+# Create necessary directories (NOT snapfifo - it's a pipe, not a directory)
+RUN mkdir -p /config /var/log
 
 # Copy configuration files
 COPY config/ /config/
