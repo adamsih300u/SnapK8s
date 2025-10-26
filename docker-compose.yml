@@ -11,6 +11,7 @@ services:
     # Volume mounts
     volumes:
       - ./config:/config
+      - ./snapserver-state:/root/.config/snapserver
       - /dev/shm:/dev/shm
     
     # Shared memory for NQPTP

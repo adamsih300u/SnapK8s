@@ -117,7 +117,9 @@ The included configuration supports these audio sources:
 | Path | Description |
 |------|-------------|
 | `/config` | Configuration directory |
+| `/root/.config/snapserver` | Snapserver state (client settings, volumes, groups) |
 | `/tmp/snapfifo` | Named pipe for audio input |
+| `/dev/shm` | Shared memory for NQPTP timing |
 
 ## Environment Variables
 

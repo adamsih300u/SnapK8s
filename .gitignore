@@ -3,6 +3,7 @@ config/snapserver.conf
 
 # Docker volumes and runtime data
 /tmp/snapfifo
+snapserver-state/
 
 # IDE and editor files
 .vscode/
