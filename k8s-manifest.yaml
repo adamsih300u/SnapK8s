@@ -20,9 +20,7 @@ data:
     
     [http]
     # Web interface configuration
-    enabled = true
-    bind_to_address = 0.0.0.0
-    port = 1780
+    enabled = false
     doc_root = /usr/share/snapserver/snapweb
     
     [tcp-control]
