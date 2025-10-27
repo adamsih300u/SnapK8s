@@ -17,21 +17,6 @@ metadata:
 data:
   snapserver.conf: |
     # Snapcast Server Configuration
-    # Audio sources configuration
-    
-    [stream]
-    # Stream configuration
-    source = pipe:///tmp/snapfifo?name=default
-    # Uncomment and configure additional sources as needed:
-    # source = pipe:///tmp/snapfifo?name=mpv_stream
-    # Spotify Connect via librespot is not available in this build
-    # source = airplay:?name=AirPlay&port=5000
-    
-    [tcp]
-    # TCP interface configuration
-    enabled = true
-    bind_to_address = 0.0.0.0
-    port = 1704
     
     [http]
     # Web interface configuration
@@ -40,8 +25,37 @@ data:
     port = 1780
     doc_root = /usr/share/snapserver/snapweb
     
+    [tcp-control]
+    # TCP control interface configuration
+    enabled = true
+    bind_to_address = 0.0.0.0
+    port = 1705
+    
+    [tcp-streaming]
+    # TCP streaming interface configuration
+    enabled = true
+    bind_to_address = 0.0.0.0
+    port = 1704
+    
+    [stream]
+    # Stream configuration
+    source = pipe:///tmp/snapfifo?name=default
+    # Uncomment and configure additional sources as needed:
+    # source = pipe:///tmp/snapfifo?name=mpv_stream
+    # Spotify Connect via librespot is not available in this build
+    # source = airplay:?name=AirPlay&port=5000
+    sampleformat = 44100:16:2
+    codec = flac
+    chunk_ms = 26
+    buffer = 150
+    
+    [streaming_client]
+    initial_volume = 100
+    timeout = 30000
+    
     [logging]
     # Logging configuration
+    sink = stdout
     filter = *:info
 
 ---
