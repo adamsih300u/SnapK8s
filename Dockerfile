@@ -179,23 +179,38 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '    nqptp' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo '# Start Snapcast Server in background (will create pipe)' >> /entrypoint.sh && \
-    echo 'echo "Starting Snapcast Server..."' >> /entrypoint.sh && \
-    echo 'echo "Checking snapserver binary:"' >> /entrypoint.sh && \
-    echo 'file /usr/local/bin/snapserver' >> /entrypoint.sh && \
-    echo 'ldd /usr/local/bin/snapserver' >> /entrypoint.sh && \
-    echo 'snapserver --config /config/snapserver.conf &' >> /entrypoint.sh && \
+    echo '# Function to start snapserver with auto-restart on crash' >> /entrypoint.sh && \
+    echo 'start_snapserver() {' >> /entrypoint.sh && \
+    echo '    while true; do' >> /entrypoint.sh && \
+    echo '        echo "Starting Snapcast Server..."' >> /entrypoint.sh && \
+    echo '        echo "Checking snapserver binary:"' >> /entrypoint.sh && \
+    echo '        file /usr/local/bin/snapserver' >> /entrypoint.sh && \
+    echo '        ldd /usr/local/bin/snapserver' >> /entrypoint.sh && \
+    echo '        snapserver --config /config/snapserver.conf' >> /entrypoint.sh && \
+    echo '        EXIT_CODE=$?' >> /entrypoint.sh && \
+    echo '        echo "Snapserver exited with code $EXIT_CODE"' >> /entrypoint.sh && \
+    echo '        if [ $EXIT_CODE -eq 0 ]; then' >> /entrypoint.sh && \
+    echo '            echo "Snapserver stopped cleanly, exiting..."' >> /entrypoint.sh && \
+    echo '            break' >> /entrypoint.sh && \
+    echo '        fi' >> /entrypoint.sh && \
+    echo '        echo "Snapserver crashed! Restarting in 5 seconds..."' >> /entrypoint.sh && \
+    echo '        sleep 5' >> /entrypoint.sh && \
+    echo '    done' >> /entrypoint.sh && \
+    echo '}' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Start Snapcast Server with auto-restart (will create pipe)' >> /entrypoint.sh && \
+    echo 'start_snapserver &' >> /entrypoint.sh && \
     echo 'SNAPSERVER_PID=$!' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# Wait for Snapcast to be ready and pipe to be created' >> /entrypoint.sh && \
-    echo 'sleep 2' >> /entrypoint.sh && \
+    echo 'sleep 5' >> /entrypoint.sh && \
     echo 'echo "Waiting for pipe to be created..."' >> /entrypoint.sh && \
-    echo 'for i in {1..10}; do' >> /entrypoint.sh && \
+    echo 'for i in {1..15}; do' >> /entrypoint.sh && \
     echo '    if [ -p /tmp/snapfifo ]; then' >> /entrypoint.sh && \
     echo '        echo "Pipe /tmp/snapfifo is ready"' >> /entrypoint.sh && \
     echo '        break' >> /entrypoint.sh && \
     echo '    fi' >> /entrypoint.sh && \
-    echo '    echo "Waiting for pipe... ($i/10)"' >> /entrypoint.sh && \
+    echo '    echo "Waiting for pipe... ($i/15)"' >> /entrypoint.sh && \
     echo '    sleep 1' >> /entrypoint.sh && \
     echo 'done' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
@@ -255,8 +270,9 @@ RUN echo 'general = {' > /etc/shairport-sync.conf && \
 EXPOSE 1704 1705 1780 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD netcat -z localhost 1704 && netcat -z localhost 5000
+# Use HTTP check instead of TCP to avoid connection churn
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD curl -f http://localhost:1780/ || exit 1
 
 # Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]

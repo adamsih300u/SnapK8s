@@ -121,30 +121,35 @@ spec:
           mountPath: /dev/shm
         
         # Resource limits and requests
+        # Increased to handle multiple audio streams
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
         
         # Health checks
+        # Using HTTP probe on web interface instead of TCP to avoid
+        # creating/dropping connections that might trigger snapserver bugs
         livenessProbe:
-          tcpSocket:
-            port: 1704
+          httpGet:
+            path: /
+            port: 1780
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 5
         
         readinessProbe:
-          tcpSocket:
-            port: 1704
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          httpGet:
+            path: /
+            port: 1780
+          initialDelaySeconds: 10
+          periodSeconds: 10
           timeoutSeconds: 3
-          failureThreshold: 2
+          failureThreshold: 3
         
         # Security context
         securityContext:
