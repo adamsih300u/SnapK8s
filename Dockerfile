@@ -269,10 +269,5 @@ RUN echo 'general = {' > /etc/shairport-sync.conf && \
 # Expose ports
 EXPOSE 1704 1705 1780 5000
 
-# Health check
-# Use HTTP check instead of TCP to avoid connection churn
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-    CMD curl -f http://localhost:1780/ || exit 1
-
 # Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
