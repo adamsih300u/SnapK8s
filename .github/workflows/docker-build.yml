@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/snapk8s
 
 jobs:
   build:
@@ -71,7 +71,7 @@ jobs:
           sleep 10
 
           docker exec snapcast-test pgrep snapserver
-          docker exec snapcast-test netcat -z localhost 1704
+          docker exec snapcast-test nc -z localhost 1704
 
           expected="${{ github.ref_name }}"
           expected="${expected#v}"
