@@ -229,12 +229,14 @@ docker-compose exec snapserver bash
 
 ### GitHub Actions
 
-The repository includes automated CI/CD:
+Images are built and published to GitHub Packages when you push a version tag. Use the same tag as the Snapcast release being bundled (e.g. `v0.35.0`):
 
-- **Multi-architecture builds** on push to main/develop
-- **Automated testing** of the built images
-- **Container registry publishing** to GitHub Packages
-- **Semantic versioning** support with git tags
+```bash
+git tag v0.35.0
+git push origin v0.35.0
+```
+
+This produces multi-arch images tagged `v0.35.0`, `0.35.0`, `0.35`, and `latest`.
 
 ## License
 

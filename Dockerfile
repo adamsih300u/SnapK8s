@@ -67,9 +67,10 @@ RUN ./configure
 RUN make -j$(nproc)
 RUN make install
 
-# Build Snapcast Server
+# Build Snapcast Server (SNAPCAST_VERSION set from git tag in CI)
+ARG SNAPCAST_VERSION=v0.35.0
 WORKDIR /build
-RUN git clone https://github.com/badaix/snapcast.git
+RUN git clone --branch ${SNAPCAST_VERSION} --depth 1 https://github.com/snapcast/snapcast.git snapcast
 WORKDIR /build/snapcast
 RUN cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
