@@ -62,16 +62,27 @@ jobs:
     steps:
       - name: Test Docker image
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          set -euo pipefail
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
 
-          docker run --rm --name snapcast-test \
-            -d \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          docker pull "$image"
+          docker run --rm --name snapcast-test -d "$image"
 
-          sleep 10
+          ready=false
+          for _ in $(seq 1 30); do
+            if docker exec snapcast-test pgrep snapserver >/dev/null 2>&1 \
+              && docker exec snapcast-test nc -z localhost 1704 >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
 
-          docker exec snapcast-test pgrep snapserver
-          docker exec snapcast-test nc -z localhost 1704
+          if [ "$ready" != true ]; then
+            echo "Container failed to become ready:"
+            docker logs snapcast-test
+            exit 1
+          fi
 
           expected="${{ github.ref_name }}"
           expected="${expected#v}"

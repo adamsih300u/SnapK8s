@@ -55,6 +55,7 @@ __pycache__/
 
 # Config examples and backups
 *.conf.example
+!config/snapserver.conf.example
 *.conf.bak
 *.conf.backup
 config.bak 

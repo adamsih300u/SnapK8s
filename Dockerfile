@@ -138,7 +138,7 @@ COPY --from=builder /etc/shairport-sync.conf.sample /etc/shairport-sync.conf
 RUN mkdir -p /config /var/log /root/.config/snapserver
 
 # Copy configuration files
-COPY config/ /config/
+COPY config/snapserver.conf.example /config/snapserver.conf
 
 # Create entrypoint script
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
